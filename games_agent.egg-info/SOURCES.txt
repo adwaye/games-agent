@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+setup.py
+games_agent.egg-info/PKG-INFO
+games_agent.egg-info/SOURCES.txt
+games_agent.egg-info/dependency_links.txt
+games_agent.egg-info/requires.txt
+games_agent.egg-info/top_level.txt
+src/games_agent/__init__.py

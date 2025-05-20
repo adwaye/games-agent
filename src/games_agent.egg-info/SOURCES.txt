@@ -1,0 +1,8 @@
+README.md
+pyproject.toml
+src/games_agent/__init__.py
+src/games_agent.egg-info/PKG-INFO
+src/games_agent.egg-info/SOURCES.txt
+src/games_agent.egg-info/dependency_links.txt
+src/games_agent.egg-info/top_level.txt
+src/games_agent/environment/board.py
