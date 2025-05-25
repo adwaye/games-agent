@@ -15,6 +15,12 @@ class Game2048Env(gym.Env):
         self.size = 4
         # 0: up, 1: down, 2: left, 3: right
         self.action_space = spaces.Discrete(4)
+        self.action_dict = {
+            0:'up',
+            1:'down',
+            2:'left',
+            3:'right',
+        }
         self.observation_space = spaces.Box(
             low=0, high=2**16, shape=(self.size, self.size), dtype=np.int32,
         )
