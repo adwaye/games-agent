@@ -45,6 +45,8 @@ class Game2048Env(gym.Env):
             return 1
         elif self.reward_function=='full_merge':
             return merged_val
+        elif self.reward_function=='log_full_merge':
+            return np.log2(merged_val)
 
 
 

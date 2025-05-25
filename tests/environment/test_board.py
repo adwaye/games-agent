@@ -230,3 +230,8 @@ class TestGame2048Env(TestCase):
         print(env.board)
 
         assert reward == expected_reward
+
+    def test_board_action_len(self):
+        env = Game2048Env()
+        assert len(env.action_dict) == env.action_space.n, "Action space size does not match action dictionary size"
+        assert env.action_space.n == 4, "Action space should have 4 actions (up, down, left, right)"
