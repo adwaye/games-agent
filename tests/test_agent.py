@@ -6,6 +6,7 @@ import random
 import numpy as np
 from games_agent.agent import DQN
 from parameterized import parameterized
+print("Importing DQN from games_agent.agent")
 
 def TestDQN(TestCase):
     def setUp(self):
@@ -14,7 +15,7 @@ def TestDQN(TestCase):
 
     
     def test_forward_shape(self):
-        input_tensor = torch.tensor(np.random.rand(1, 1, 4, 4), dtype=torch.float32)
+        input_tensor = torch.tensor(np.random.rand( 1, 4, 4), dtype=torch.float32)
         output = self.model(input_tensor)
         self.assertEqual(output.shape[0], 2)  # Batch size
         self.assertEqual(output.shape[2], 2)

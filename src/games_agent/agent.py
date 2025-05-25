@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
+import numpy as np
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
@@ -54,3 +55,10 @@ class DQN(nn.Module):
         x = self.pool1(F.relu(x))
 
         return x
+
+
+if __name__ == "__main__":
+    input_tensor = torch.tensor(np.random.rand(1, 4, 4), dtype=torch.float32)
+    model = DQN(4)  # Example number of actions
+    output = model(input_tensor)
+    print(output.shape)  # Should print torch.Size([1, 2, 2])
