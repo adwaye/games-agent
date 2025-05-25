@@ -10,9 +10,22 @@ from gymnasium import spaces
 class Game2048Env(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self):
+    def __init__(self,reward_function:str='full_merge'):
+        """Games env for 2048 game
+
+        Parameters
+        ----------
+        reward_function: str
+            Types:
+            * ``'merge_only``: +1 when merge happens
+
+            *``'full_merge'``: total of the number of merged cells
+
+
+        """
         super().__init__()
         self.size = 4
+        self.reward_function = reward_function
         # 0: up, 1: down, 2: left, 3: right
         self.action_space = spaces.Discrete(4)
         self.action_dict = {
@@ -25,6 +38,15 @@ class Game2048Env(gym.Env):
             low=0, high=2**16, shape=(self.size, self.size), dtype=np.int32,
         )
         self.reset()
+
+
+    def _reward_fn(self,merged_val):
+        if self.reward_function=='merge_only':
+            return 1
+        elif self.reward_function=='full_merge':
+            return merged_val
+
+
 
     def reset(self):
         self.board = np.zeros((self.size, self.size), dtype=np.int32)
@@ -63,7 +85,7 @@ class Game2048Env(gym.Env):
                 if i + 1 < len(non_zero) and non_zero[i] == non_zero[i + 1]:
                     merged_val = non_zero[i] * 2
                     merged.append(merged_val)
-                    reward += merged_val
+                    reward += self._reward_fn(merged_val)
                     skip = True
                 else:
                     merged.append(non_zero[i])
