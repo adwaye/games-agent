@@ -1,0 +1,14 @@
+agent:
+  _target_: games_agent.agent.DQNAgent
+  batch_size: 32
+  gamma: 0.99
+  eps_start: 0.9
+  eps_end: 0.05
+  eps_decay: 1000
+  tau: 0.005
+  lr: 1e-4
+  num_episodes: 2000
+  env:
+    _target_: games_agent.environment.board.Game2048Env
+    reward_function: 'merge_only'
+
