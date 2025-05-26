@@ -8,7 +8,8 @@ agent:
   tau: 0.005
   lr: 1e-4
   num_episodes: 2000
+  update_rule: 'copy' # or weighted_average
+  update_interval: 1000
   env:
     _target_: games_agent.environment.board.Game2048Env
     reward_function: 'merge_only'
-

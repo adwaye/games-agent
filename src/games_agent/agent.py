@@ -125,6 +125,8 @@ class DQNAgent:
         tau: float = TAU,
         lr: float = LR,
         num_episodes: int = 2000,
+        update_rule: str = "weighted_average",
+        update_interval=500,
     ):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.env = env
@@ -143,6 +145,17 @@ class DQNAgent:
         self.eps_decay = eps_decay
         self.tau = tau
         self.lr = lr
+        self.update_rule = update_rule
+        self.update_interval = update_interval
+
+    @property
+    def update_rule(self):
+        return self._update_rule
+
+    @update_rule.setter
+    def update_rule(self, value):
+        assert value.lower() in ["copy", "weighted_average"]
+        self._update_rule = value.lower()
 
     def select_action(self, state):
         sample = random.random()
@@ -196,6 +209,29 @@ class DQNAgent:
     def save_model(self, path="dqn_model.pth"):
         torch.save(self.policy_net.state_dict(), path)
         logging.info(f"Model saved to {path}")
+
+    def update_agent_weights(self):
+        """Update the weights of the target network."""
+        timestep = self.steps_done
+        target_net_state_dict = self.target_net.state_dict()
+        policy_net_state_dict = self.policy_net.state_dict()
+        if self.update_rule == "weighted_average":
+            logging.info("transfering weights to target network using weighted average")
+            for key in target_net_state_dict.keys():
+                target_net_state_dict[key] = (
+                    self.tau * policy_net_state_dict[key]
+                    + (1 - self.tau) * target_net_state_dict[key]
+                )
+        elif self.update_rule == "copy":
+            if timestep % self.update_interval == 0:
+                logging.info(
+                    f"n_steps: {timestep}, updating target network"
+                    "transfering weights to target network using copy"
+                )
+                for key in target_net_state_dict.keys():
+                    target_net_state_dict[key] = policy_net_state_dict[key]
+
+        self.target_net.load_state_dict(target_net_state_dict)
 
 
 if __name__ == "__main__":
