@@ -29,6 +29,37 @@ Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
 
+lass PrioritizedReplayBuffer:
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.buffer = []
+        self.indexes = np.zeros(capacity, dtype=np.int32)
+        self.priorities = np.zeros(capacity, dtype=np.float32)
+
+    def push(self, state, action, reward, next_state, done):
+        max_priority = np.max(self.priorities)
+        if len(self.buffer) < self.capacity:
+            self.buffer.append((state, action, reward, next_state, done))
+            n = len(self.buffer) - 1
+            self.priorities[n] = max_priority + 1
+        else:
+            i = np.random.choice(len(self.buffer), p=self.priorities/sum(self.priorities))
+            self.buffer[i] = (state, action, reward, next_state, done)
+            self.priorities[i] = max_priority + 1
+
+    def sample(self, batch_size):
+        if len(self.buffer) < self.capacity:
+            i = np.random.choice(len(self.buffer), size=batch_size)
+            return [self.buffer[j] for j in i]
+        else:
+            i = np.random.choice(len(self.buffer), size=batch_size, replace=False, p=self.priorities/sum(self.priorities))
+            return [self.buffer[i[j]] for j in range(batch_size)]
+
+    def update_priorities(self, indices, priorities):
+        for idx, priority in zip(indices, priorities):
+            self.priorities[idx] = priority
+
+
 class ReplayMemory(object):
 
     def __init__(self, capacity):
