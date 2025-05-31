@@ -38,6 +38,7 @@ class Game2048Env(gym.Env):
         super().__init__()
         self.size = 4
         self.reward_function = reward_function
+        self.reward_scaling = reward_scaling
         # 0: up, 1: down, 2: left, 3: right
         self.action_space = spaces.Discrete(4)
         self.action_dict = {
