@@ -13,3 +13,4 @@ agent:
   env:
     _target_: games_agent.environment.board.Game2048Env
     reward_function: 'merge_only'
+    reward_scaling: 'total_value' # one of total_value, total_steps, current

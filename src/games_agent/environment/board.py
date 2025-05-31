@@ -10,7 +10,11 @@ from gymnasium import spaces
 class Game2048Env(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self,reward_function:str='full_merge'):
+    def __init__(
+        self,
+        reward_function:str='full_merge',
+        reward_scaling:str='total'
+    ):
         """Games env for 2048 game
 
         Parameters
@@ -20,6 +24,14 @@ class Game2048Env(gym.Env):
             * ``'merge_only``: +1 when merge happens
 
             *``'full_merge'``: total of the number of merged cells
+        
+        reward_scaling: str
+            Types
+            * ``'total_value``: scales the reward by the total board value
+
+            * ``'total_steps``: scales the reward by the total steps taken
+
+            * ``'current'``: no scaling apply
 
 
         """
@@ -40,7 +52,18 @@ class Game2048Env(gym.Env):
         self.reset()
 
 
-    def _reward_fn(self,merged_val):
+    @property
+    def reward_scaling(self):
+        return self._reward_scaling
+
+    @reward_scaling.setter
+    def reward_scaling(self,value):
+        allowed_rewards = ['current','total_steps','total_value']
+        if value.lower() not in allowed_rewards:
+            raise ValueError(f"reward_scaling should be one of {allowed_rewards}")
+        self._reward_scaling = value
+
+    def _reward_fn(self,merged_val:str)->float:
         if self.reward_function=='merge_only':
             return 1
         elif self.reward_function=='full_merge':
@@ -48,12 +71,21 @@ class Game2048Env(gym.Env):
         elif self.reward_function=='log_full_merge':
             return np.log2(merged_val)
 
-
+    def _scale_reward(self,move_reward:float)->float:
+        if self.reward_scaling =='total_value':
+            return move_reward/np.sum(self.board)
+        elif self.reward_scaling == 'total_steps':
+            return move_reward/self.steps
+        elif self.reward_scaling == 'current':
+            return move_reward
+        else:
+            raise NotImplementedError('Not implemented for reward_scaling')
 
     def reset(self):
         self.board = np.zeros((self.size, self.size), dtype=np.int32)
         self._add_tile()
         self._add_tile()
+        self.steps = 0
         return self.board.copy()
 
     def step(self, action):
@@ -63,6 +95,7 @@ class Game2048Env(gym.Env):
         done = not self._can_move()
         if moved:
             self._add_tile()
+        self.steps +=1
         return self.board.copy(), reward, done, {}
 
     def render(self, mode='human'):
