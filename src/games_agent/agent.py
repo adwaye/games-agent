@@ -157,19 +157,28 @@ class DQNAgent:
         assert value.lower() in ["copy", "weighted_average"]
         self._update_rule = value.lower()
 
-    def select_action(self, state):
-        sample = random.random()
-        eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(
-            -1.0 * self.steps_done / EPS_DECAY
-        )
-        self.steps_done += 1
-        if sample > eps_threshold:
-            with torch.no_grad():
-                return self.policy_net(state).max(1).indices.view(1, 1)
-        else:
-            return torch.tensor(
-                [[self.env.action_space.sample()]], device=self.device, dtype=torch.long
+    def select_action(self, state,train=True):
+        """Select action
+        """
+        if train == True:
+            sample = random.random()
+            eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(
+                -1.0 * self.steps_done / EPS_DECAY
             )
+            self.steps_done += 1
+            if sample > eps_threshold:
+                return self._select_predicted_action(state)
+                    
+            else:
+                return torch.tensor(
+                    [[self.env.action_space.sample()]], device=self.device, dtype=torch.long
+                )
+        else:
+            return self._select_predicted_action(state)
+
+    @torch.no_grad
+    def _select_predicted_action(self,state):
+        return self.policy_net(state).max(1).indices.view(1, 1)
 
     def optimize_model(self):
         if len(self.memory) < BATCH_SIZE:
