@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import random
 from unittest import TestCase
 
-import random
 import numpy as np
 from games_agent.environment.board import Game2048Env
 from parameterized import parameterized
@@ -93,7 +93,7 @@ class TestGame2048Env(TestCase):
                         [0, 0, 0, 0],
                     ],
                 ), 0, 0,
-            ],   
+            ],
             [
                 np.array(
                     [
@@ -103,7 +103,7 @@ class TestGame2048Env(TestCase):
                         [4, 0, 0, 0],
                     ],
                 ), 0, 48,
-            ],                         
+            ],
         ),
     )
     def test_step_one_step_full_merge(self, board, action, expected_reward):
@@ -120,7 +120,6 @@ class TestGame2048Env(TestCase):
         print(env.board)
 
         assert reward == expected_reward
-
 
     @parameterized.expand(
         (
@@ -203,7 +202,7 @@ class TestGame2048Env(TestCase):
                         [0, 0, 0, 0],
                     ],
                 ), 0, 0,
-            ],   
+            ],
             [
                 np.array(
                     [
@@ -213,7 +212,7 @@ class TestGame2048Env(TestCase):
                         [0, 0, 0, 1024],
                     ],
                 ), 0, 2,
-            ],                         
+            ],
         ),
     )
     def test_step_one_step_merge_only(self, board, action, expected_reward):
@@ -233,5 +232,9 @@ class TestGame2048Env(TestCase):
 
     def test_board_action_len(self):
         env = Game2048Env()
-        assert len(env.action_dict) == env.action_space.n, "Action space size does not match action dictionary size"
-        assert env.action_space.n == 4, "Action space should have 4 actions (up, down, left, right)"
+        assert len(
+            env.action_dict,
+        ) == env.action_space.n, \
+            'Action space size does not match action dictionary size'
+        assert env.action_space.n == 4, \
+            'Action space should have 4 actions (up, down, left, right)'

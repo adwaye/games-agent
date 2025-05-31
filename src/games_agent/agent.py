@@ -1,24 +1,19 @@
-from torch.utils.tensorboard import SummaryWriter
-import gymnasium as gym
-import os
+from __future__ import annotations
+
+import logging
 import math
 import random
+from collections import deque
+from collections import namedtuple
 
-# import matplotlib
-# import matplotlib.pyplot as plt
-from collections import namedtuple, deque
-from itertools import count
-from games_agent.environment.board import Game2048Env
-
+import numpy as np
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
-import numpy as np
-import logging
+import torch.optim as optim
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
 )
 
 BATCH_SIZE = 128
@@ -30,7 +25,7 @@ TAU = 0.005
 LR = 1e-4
 
 Transition = namedtuple(
-    "Transition", ("state", "action", "next_state", "reward", "done")
+    'Transition', ('state', 'action', 'next_state', 'reward', 'done'),
 )
 
 
@@ -49,7 +44,7 @@ class PrioritizedReplayBuffer:
             self.priorities[n] = max_priority + 1
         else:
             i = np.random.choice(
-                len(self.buffer), p=self.priorities / sum(self.priorities)
+                len(self.buffer), p=self.priorities / sum(self.priorities),
             )
             self.buffer[i] = (state, action, reward, next_state, done)
             self.priorities[i] = max_priority + 1
@@ -72,7 +67,7 @@ class PrioritizedReplayBuffer:
             self.priorities[idx] = priority
 
 
-class ReplayMemory(object):
+class ReplayMemory:
     def __init__(self, capacity):
         self.memory = deque([], maxlen=capacity)
 
@@ -89,7 +84,7 @@ class ReplayMemory(object):
 
 class DQN(nn.Module):
     def __init__(self, n_actions):
-        super(DQN, self).__init__()
+        super().__init__()
         self.layer1 = nn.Conv2d(
             in_channels=1,
             out_channels=2,
@@ -125,17 +120,19 @@ class DQNAgent:
         tau: float = TAU,
         lr: float = LR,
         num_episodes: int = 2000,
-        update_rule: str = "weighted_average",
+        update_rule: str = 'weighted_average',
         update_interval=500,
     ):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.env = env
         self.device = device
         self.n_actions = env.action_space.n
         self.policy_net = DQN(self.n_actions).to(device)
         self.target_net = DQN(self.n_actions).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
-        self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=LR, amsgrad=True)
+        self.optimizer = optim.AdamW(
+            self.policy_net.parameters(), lr=LR, amsgrad=True,
+        )
         self.memory = ReplayMemory(10000)
         self.steps_done = 0
         self.batch_size = batch_size
@@ -154,30 +151,32 @@ class DQNAgent:
 
     @update_rule.setter
     def update_rule(self, value):
-        assert value.lower() in ["copy", "weighted_average"]
+        assert value.lower() in ['copy', 'weighted_average']
         self._update_rule = value.lower()
 
-    def select_action(self, state,train=True):
+    def select_action(self, state, train=True):
         """Select action
         """
-        if train == True:
+        if train:
             sample = random.random()
             eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(
-                -1.0 * self.steps_done / EPS_DECAY
+                -1.0 * self.steps_done / EPS_DECAY,
             )
             self.steps_done += 1
             if sample > eps_threshold:
                 return self._select_predicted_action(state)
-                    
+
             else:
                 return torch.tensor(
-                    [[self.env.action_space.sample()]], device=self.device, dtype=torch.long
+                    [[self.env.action_space.sample()]],
+                    device=self.device,
+                    dtype=torch.long,
                 )
         else:
             return self._select_predicted_action(state)
 
     @torch.no_grad
-    def _select_predicted_action(self,state):
+    def _select_predicted_action(self, state):
         return self.policy_net(state).max(1).indices.view(1, 1)
 
     def optimize_model(self):
@@ -192,126 +191,61 @@ class DQNAgent:
             dtype=torch.bool,
         )
         non_final_next_states = torch.cat(
-            [s for s in batch.next_state if s is not None]
+            [s for s in batch.next_state if s is not None],
         )
         state_batch = torch.cat(batch.state)
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
 
-        state_action_values = self.policy_net(state_batch).gather(1, action_batch)
+        state_action_values = self.policy_net(
+            state_batch,
+        ).gather(1, action_batch)
 
         next_state_values = torch.zeros(BATCH_SIZE, device=self.device)
         with torch.no_grad():
             next_state_values[non_final_mask] = (
                 self.target_net(non_final_next_states).max(1).values
             )
-        expected_state_action_values = (next_state_values * GAMMA) + reward_batch
+        expected_state_action_values = (
+            next_state_values * GAMMA
+        ) + reward_batch
 
         criterion = nn.SmoothL1Loss()
-        loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
+        loss = criterion(
+            state_action_values,
+            expected_state_action_values.unsqueeze(1),
+        )
 
         self.optimizer.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
 
-    def save_model(self, path="dqn_model.pth"):
+    def save_model(self, path='dqn_model.pth'):
         torch.save(self.policy_net.state_dict(), path)
-        logging.info(f"Model saved to {path}")
+        logging.info(f'Model saved to {path}')
 
     def update_agent_weights(self):
         """Update the weights of the target network."""
         timestep = self.steps_done
         target_net_state_dict = self.target_net.state_dict()
         policy_net_state_dict = self.policy_net.state_dict()
-        if self.update_rule == "weighted_average":
-            logging.info("transfering weights to target network using weighted average")
+        if self.update_rule == 'weighted_average':
+            logging.info(
+                'transfering weights to target network using weighted average',
+            )
             for key in target_net_state_dict.keys():
                 target_net_state_dict[key] = (
                     self.tau * policy_net_state_dict[key]
                     + (1 - self.tau) * target_net_state_dict[key]
                 )
-        elif self.update_rule == "copy":
+        elif self.update_rule == 'copy':
             if timestep % self.update_interval == 0:
                 logging.info(
-                    f"n_steps: {timestep}, updating target network"
-                    "transfering weights to target network using copy"
+                    f'n_steps: {timestep}, updating target network'
+                    'transfering weights to target network using copy',
                 )
                 for key in target_net_state_dict.keys():
                     target_net_state_dict[key] = policy_net_state_dict[key]
 
         self.target_net.load_state_dict(target_net_state_dict)
-
-
-if __name__ == "__main__":
-
-    from datetime import datetime
-
-    today = datetime.today()
-    # current_time = date.strftime("%H:%M:%S")
-    output_dir = f"./output/{today}"
-
-    writer = SummaryWriter(output_dir)
-    os.makedirs(output_dir + "/MODELS", exist_ok=True)
-    if torch.cuda.is_available() or torch.backends.mps.is_available():
-        num_episodes = 2000
-        device = torch.device("cuda" if torch.cuda.is_available() else "mps")
-    else:
-        device = torch.device("cpu")
-        num_episodes = 50
-
-    dqn_agent = DQNAgent(Game2048Env("log_full_merge"), device=device)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    for i_episode in range(num_episodes):
-        reward_total = 0
-        state = dqn_agent.env.reset()
-        state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
-        for t in count():
-            action = dqn_agent.select_action(state)  # dqn_agent.select_action(state)
-            observation, reward, terminated, done = dqn_agent.env.step(action.item())
-            reward_total += reward
-            reward = torch.tensor([reward], device=device)
-            # done = terminated or truncated
-
-            if terminated:
-                next_state = None
-                done = True
-            else:
-                next_state = torch.tensor(
-                    observation, dtype=torch.float32, device=device
-                ).unsqueeze(0)
-
-            dqn_agent.memory.push(state, action, next_state, reward)
-
-            state = next_state
-
-            dqn_agent.optimize_model()
-
-            target_net_state_dict = dqn_agent.target_net.state_dict()
-            policy_net_state_dict = dqn_agent.policy_net.state_dict()
-            for key in policy_net_state_dict:
-                target_net_state_dict[key] = policy_net_state_dict[
-                    key
-                ] * TAU + target_net_state_dict[key] * (1 - TAU)
-            dqn_agent.target_net.load_state_dict(target_net_state_dict)
-
-            if done:
-                if i_episode % 10 == 0:
-                    logging.info(
-                        f"Episode {i_episode} finished after {t + 1} timesteps"
-                    )
-                    logging.info(f"Total reward: {reward_total}")
-                    logging.info(f"Max value in board: {dqn_agent.env.board.max()}")
-                    dqn_agent.env.render()
-                    writer.add_scalar("Episode/Reward", reward_total, i_episode)
-                    writer.add_scalar("Episode/Duration", t + 1, i_episode)
-                    writer.add_scalar(
-                        "Episode/max_value", dqn_agent.env.board.max(), i_episode
-                    )
-                if i_episode % 100 == 0:
-                    dqn_agent.save_model(
-                        path=output_dir + f"/MODELS/dqn_model_{i_episode}.pth"
-                    )
-
-                break

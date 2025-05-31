@@ -16,7 +16,7 @@ def main():
         while not done:
             action = env.action_space.sample()
             _, reward, done, _ = env.step(action)
-            print(f"Action: {action}, Reward: {reward}")
+            print(f'Action: {action}, Reward: {reward}')
             env.render()
             time.sleep(2)
 
